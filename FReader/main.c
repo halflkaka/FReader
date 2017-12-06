@@ -7,9 +7,11 @@
 //
 
 #include <stdio.h>
+#include <regex.h>
+#include "lexical.h"
+
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
+    FScaner();
     return 0;
 }

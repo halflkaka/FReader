@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		CFAB76831FD2F56600352A5D /* FReader */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = FReader; sourceTree = BUILT_PRODUCTS_DIR; };
 		CFAB76861FD2F56600352A5D /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		CFAB768D1FD2F5A000352A5D /* lexical.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lexical.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				CFAB76861FD2F56600352A5D /* main.c */,
+				CFAB768D1FD2F5A000352A5D /* lexical.h */,
 			);
 			path = FReader;
 			sourceTree = "<group>";
