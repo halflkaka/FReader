@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <regex.h>
 #include "lexical.h"
+//#include "syntaxique.h"
 
 
 int main(int argc, const char * argv[]) {

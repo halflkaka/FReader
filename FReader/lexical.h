@@ -8,12 +8,15 @@
 
 #include <stdio.h>
 #include <regex.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define Start 0
 #define Operator 1
 #define Parenthese 2
 #define Variable 3
 #define End 4
+#define Size 100
 
 char operators[6] = {'~','|','&','=','(',')'};
 
@@ -26,6 +29,9 @@ int isOperator(char ch){
     return 0;
 }
 
+int isVariableStart(char ch){
+    return ch >= 'a' && ch <= 'z';
+}
 int isVariable(char ch){
     if((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')){
         return 1;
@@ -37,6 +43,7 @@ typedef enum lexeme_t{
     par_ou,
     par_fe,
     op,
+    rev,
     error
 } lexeme_t;
 
@@ -56,26 +63,87 @@ int isVariableType(lexeme lu){
     return lu.type == variable;
 }
 int isOpType(lexeme lu){
-    return lu.type == op || lu.type == par_fe || lu.type == par_ou;
+    return lu.type == op || lu.type == par_fe || lu.type == par_ou || lu.type == rev;
 }
 int isError(lexeme lu){
     return lu.type == error;
 }
+
+//Definition of tree
+typedef struct noeud * arbre;
+//State of node
+typedef enum State{
+    Term,
+    Facteur,
+    OP,
+    Var,
+    Par,
+    Rev,
+    None
+} State;
+
+struct noeud{
+    char * etiquette;
+    enum State state;
+    arbre left_child;
+    arbre middle_child;
+    arbre right_child;
+};
+
+/*arbre assemble(enum State name, arbre * leftc, arbre * rightc){
+    arbre newTree = malloc(sizeof(struct noeud));
+    newTree->state = name;
+    newTree->left_child = *leftc;
+    newTree->right_child = *rightc;
+    return newTree;
+};*/
+
+//Initialization
+arbre initTree(enum State name){
+    arbre node = malloc(sizeof(struct noeud));
+    node->etiquette = NULL;
+    node->left_child = NULL;
+    node->right_child = NULL;
+    node->middle_child = NULL;
+    node->state = name;
+    return node;
+}
+
+int term(int d, int f, arbre currentNode);
+arbre node;
 
 void print_formula(llexeme result){
     for(int i = 0;i < result.N;i ++){
         if(isVariableType(result.token[i])){
             printf("Variable: ");
         }else if(isOpType(result.token[i])){
-            printf("Operator: ");
+            if(result.token[i].type == rev){
+                printf("Uni Operator: ");
+            }else if(result.token[i].type == par_ou){
+                printf("Parenthese Ouverte: ");
+            }else if (result.token[i].type == par_fe){
+                printf("Parenthese Fermee: ");
+            }else{
+                printf("Bi Operator: ");
+            }
         }else if(isError(result.token[i])){
-            printf("Error happens!\n");
+            printf("Error happens on %c!\n",result.token[i].valeur[0]);
             break;
         }
         for(int j = 0;j < result.token[i].length;j++){
             printf("%c",result.token[i].valeur[j]);
         }
         printf("\n");
+    }
+}
+//中序遍历打印
+void print_tree(arbre root){
+    if(root == NULL){return;}
+    print_tree(root->left_child);
+    print_tree(root->middle_child);
+    print_tree(root->right_child);
+    if(root->state != Facteur && root->state != Term){
+        printf("%s",root->etiquette);
     }
 }
 
@@ -118,7 +186,7 @@ int FScaner() {
         while(state != End){
             switch (state) {
                 case Start:
-                    if(isVariable(texte[pText])){
+                    if(isVariableStart(texte[pText])){
                         state = Variable;
                         lu.valeur[pToken++] = texte[pText];
                     }
@@ -129,11 +197,20 @@ int FScaner() {
                         }else{
                             state = End;
                             lu.valeur[pToken++] = texte[pText];
-                            lu.type = op;
+                            if(texte[pText] == '('){
+                                lu.type = par_ou;
+                            }else if (texte[pText] == ')'){
+                                lu.type = par_fe;
+                            }else if (texte[pText] == '~'){
+                                lu.type = rev;
+                            }else{
+                                lu.type = op;
+                            }
                         }
                     }else{
                         state = End;
-                        //TODO erreur!
+                        lu.type = error;
+                        lu.valeur[pToken++] = texte[pText];
                     }
                     break;
                 case Variable:
@@ -149,6 +226,8 @@ int FScaner() {
                         pText --;
                     }else{
                         lu.type = error;
+                        state = End;
+                        pText --;
                     }
                     break;
                 case Operator:
@@ -182,7 +261,115 @@ int FScaner() {
     
     print_formula(result);
     
+    node = initTree(Term);
+    if(term(0, n-1, node) == 1){
+        printf("syntaxique correct.\n");
+    }else{
+        printf("syntaxique error.\n");
+    }
+    
+    print_tree(node);
+    printf("\n");
+    
     regfree(&myregex);
     
     return 0;
 }
+
+
+//syntaxique
+//If '~' is in the right node, have to move it to left
+void adjust(arbre currentNode){
+    if(currentNode->right_child->etiquette[0] == '~'){
+        arbre temp = currentNode->left_child;
+        currentNode->left_child = currentNode->right_child;
+        currentNode->right_child = temp;
+    }
+}
+
+//BNF
+int Op(int d, arbre currentNode){
+    int resultat = (result.token[d].type == op);
+    if(resultat == 1){
+        //Initialize OP node
+        arbre Opnode = initTree(OP);
+        Opnode->etiquette = result.token[d].valeur;
+        //add in the tree
+        currentNode->middle_child = Opnode;
+    }
+    return resultat;
+}
+
+int Vb(int d, int f, arbre currentNode){
+    int resultat = (result.token[d].type == variable);
+    if(resultat == 1){
+        //Initialize Variable node
+        arbre Varnode = initTree(Var);
+        Varnode->etiquette = result.token[d].valeur;
+        //add in the tree
+        currentNode->left_child = Varnode;
+    }
+    return resultat;
+}
+
+int facteur(int d, int f, arbre currentNode){
+    //Initialize Facteur node
+    arbre Facnode = initTree(Facteur);
+    int resultat = Vb(d,f,Facnode) && d == f;//facteur = variable
+    if (!resultat){
+        //Initialize Term node
+        arbre Termnode = initTree(Term);
+        if(result.token[d].type == par_ou && result.token[f].type == par_fe &&
+           term(d+1, f-1, Termnode)){ //facteur = '('term')'
+            //Connect facteur&term2
+            Facnode->middle_child = Termnode;
+            //Connect term1&facteur
+            if (currentNode->left_child == NULL){
+                currentNode->left_child = Facnode;
+            }else if (currentNode->right_child == NULL){
+                currentNode->right_child = Facnode;
+            }
+            //Add parenthese of Facteur node
+            arbre leftc = initTree(Par);
+            arbre rightc = initTree(Par);
+            leftc->etiquette = result.token[d].valeur;
+            rightc->etiquette = result.token[f].valeur;
+            Facnode->left_child = leftc;
+            Facnode->right_child = rightc;
+            //It's a facteur!
+            resultat = 1;
+        }
+    }else {
+        if (currentNode->left_child == NULL){
+            currentNode->left_child = Facnode;
+        }else if (currentNode->right_child == NULL){
+            currentNode->right_child = Facnode;
+        }
+    }
+    return resultat;
+}
+
+int term(int d, int f, arbre currentNode){
+    int i = f - 1, b = facteur(d, f, currentNode);
+    while(b == 0 && i >= d){
+        if(Op(i, currentNode) && facteur(d, i-1, currentNode) && facteur(i+1, f, currentNode)){
+            //term = facteur OP facteur
+            b = 1;
+        }else if((result.token[d].valeur[0] == '~') && facteur(d+1, f, currentNode)){
+            //term = '~'facteur
+            arbre RevNode = initTree(Rev);
+            RevNode->etiquette = "~";
+            if(currentNode->left_child == NULL){
+                currentNode->left_child = RevNode;
+            }else{
+                currentNode->right_child = RevNode;
+            }
+            adjust(currentNode);
+            b = 1;
+        }
+        i --;
+    }
+    return b;
+}
+
+
