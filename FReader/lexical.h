@@ -86,17 +86,8 @@ struct noeud{
     char * etiquette;
     enum State state;
     arbre left_child;
-    arbre middle_child;
     arbre right_child;
 };
-
-/*arbre assemble(enum State name, arbre * leftc, arbre * rightc){
-    arbre newTree = malloc(sizeof(struct noeud));
-    newTree->state = name;
-    newTree->left_child = *leftc;
-    newTree->right_child = *rightc;
-    return newTree;
-};*/
 
 //Initialization
 arbre initTree(enum State name){
@@ -104,11 +95,15 @@ arbre initTree(enum State name){
     node->etiquette = NULL;
     node->left_child = NULL;
     node->right_child = NULL;
-    node->middle_child = NULL;
     node->state = name;
     return node;
 }
 
+void rule1(arbre currentnode);
+void rule2(arbre currentnode);
+void rule5(arbre currentnode);
+void rule6(arbre currentnode);
+void rule7(arbre currentnode);
 int term(int d, int f, arbre currentNode);
 arbre node;
 
@@ -139,11 +134,26 @@ void print_formula(llexeme result){
 //中序遍历打印
 void print_tree(arbre root){
     if(root == NULL){return;}
-    print_tree(root->left_child);
-    print_tree(root->middle_child);
-    print_tree(root->right_child);
-    if(root->state != Facteur && root->state != Term){
+    
+    if(root->etiquette[0] == '~'){
+        printf("(");
         printf("%s",root->etiquette);
+        print_tree(root->left_child);
+        print_tree(root->right_child);
+        printf(")");
+    }
+    else{
+        if(root->left_child != NULL){
+            printf("(");
+        }
+        print_tree(root->left_child);
+        if(root->etiquette != NULL){
+            printf("%s",root->etiquette);
+        }
+        print_tree(root->right_child);
+        if(root->right_child != NULL){
+            printf(")");
+        }
     }
 }
 
@@ -268,7 +278,8 @@ int FScaner() {
         printf("syntaxique error.\n");
     }
     
-    print_tree(node);
+    arbre root = node->left_child;
+    print_tree(root);
     printf("\n");
     
     regfree(&myregex);
@@ -278,72 +289,42 @@ int FScaner() {
 
 
 //syntaxique
-//If '~' is in the right node, have to move it to left
-void adjust(arbre currentNode){
-    if(currentNode->right_child->etiquette[0] == '~'){
-        arbre temp = currentNode->left_child;
-        currentNode->left_child = currentNode->right_child;
-        currentNode->right_child = temp;
-    }
-}
 
 //BNF
 int Op(int d, arbre currentNode){
     int resultat = (result.token[d].type == op);
     if(resultat == 1){
         //Initialize OP node
-        arbre Opnode = initTree(OP);
-        Opnode->etiquette = result.token[d].valeur;
-        //add in the tree
-        currentNode->middle_child = Opnode;
+        currentNode->etiquette = result.token[d].valeur;
     }
     return resultat;
 }
 
 int Vb(int d, int f, arbre currentNode){
-    int resultat = (result.token[d].type == variable);
+    int resultat = ((result.token[d].type == variable) && d == f);
     if(resultat == 1){
         //Initialize Variable node
         arbre Varnode = initTree(Var);
         Varnode->etiquette = result.token[d].valeur;
         //add in the tree
-        currentNode->left_child = Varnode;
+        if(currentNode->left_child == NULL){
+            currentNode->left_child = Varnode;
+        }else{
+            currentNode->right_child = Varnode;
+        }
     }
     return resultat;
 }
 
 int facteur(int d, int f, arbre currentNode){
     //Initialize Facteur node
-    arbre Facnode = initTree(Facteur);
-    int resultat = Vb(d,f,Facnode) && d == f;//facteur = variable
+    int resultat = Vb(d,f,currentNode);//facteur = variable
     if (!resultat){
         //Initialize Term node
-        arbre Termnode = initTree(Term);
         if(result.token[d].type == par_ou && result.token[f].type == par_fe &&
-           term(d+1, f-1, Termnode)){ //facteur = '('term')'
-            //Connect facteur&term2
-            Facnode->middle_child = Termnode;
-            //Connect term1&facteur
-            if (currentNode->left_child == NULL){
-                currentNode->left_child = Facnode;
-            }else if (currentNode->right_child == NULL){
-                currentNode->right_child = Facnode;
-            }
-            //Add parenthese of Facteur node
-            arbre leftc = initTree(Par);
-            arbre rightc = initTree(Par);
-            leftc->etiquette = result.token[d].valeur;
-            rightc->etiquette = result.token[f].valeur;
-            Facnode->left_child = leftc;
-            Facnode->right_child = rightc;
+           term(d+1, f-1, currentNode)){ //facteur = '('term')'
             //It's a facteur!
             resultat = 1;
-        }
-    }else {
-        if (currentNode->left_child == NULL){
-            currentNode->left_child = Facnode;
-        }else if (currentNode->right_child == NULL){
-            currentNode->right_child = Facnode;
         }
     }
     return resultat;
@@ -351,20 +332,24 @@ int facteur(int d, int f, arbre currentNode){
 
 int term(int d, int f, arbre currentNode){
     int i = f - 1, b = facteur(d, f, currentNode);
+    arbre Facnode = initTree(Facteur);
     while(b == 0 && i >= d){
-        if(Op(i, currentNode) && facteur(d, i-1, currentNode) && facteur(i+1, f, currentNode)){
+        if(Op(i, Facnode) && facteur(d, i-1, Facnode) && facteur(i+1, f, Facnode)){
             //term = facteur OP facteur
-            b = 1;
-        }else if((result.token[d].valeur[0] == '~') && facteur(d+1, f, currentNode)){
-            //term = '~'facteur
-            arbre RevNode = initTree(Rev);
-            RevNode->etiquette = "~";
             if(currentNode->left_child == NULL){
-                currentNode->left_child = RevNode;
+                currentNode->left_child = Facnode;
             }else{
-                currentNode->right_child = RevNode;
+                currentNode->right_child = Facnode;
             }
-            adjust(currentNode);
+            b = 1;
+        }else if((result.token[d].valeur[0] == '~') && facteur(d+1, f, Facnode)){
+            //term = '~'facteur
+            Facnode->etiquette = "~";
+            if(currentNode->left_child == NULL){
+                currentNode->left_child = Facnode;
+            }else{
+                currentNode->right_child = Facnode;
+            }
             b = 1;
         }
         i --;
@@ -373,3 +358,69 @@ int term(int d, int f, arbre currentNode){
 }
 
 
+//Apply rules
+void rule1(arbre currentNode){
+    currentNode->etiquette = "|";
+    arbre leftbranch = currentNode->left_child;
+    arbre Termnode = initTree(Term);
+    Termnode->etiquette = "~";
+    Termnode->left_child = leftbranch;
+    currentNode->left_child = Termnode;
+}
+
+void rule2(arbre currentNode){
+    currentNode->etiquette = "&";
+    arbre leftbranch = currentNode->left_child;
+    arbre rightbranch = currentNode->right_child;
+    arbre r_leftbranch = rightbranch->left_child;
+    arbre Facnode = initTree(Facteur);
+    
+    Facnode->etiquette = "|";
+    Facnode->left_child = leftbranch;
+    Facnode->right_child = r_leftbranch;
+    
+    currentNode->left_child = Facnode;
+    
+    rightbranch->etiquette = "|";
+    rightbranch->left_child = leftbranch;
+}
+
+void rule5(arbre currentNode){
+    currentNode->etiquette = "|";
+    arbre leftbranch = currentNode->left_child->left_child;
+    arbre rightbranch = currentNode->left_child->right_child;
+    
+    arbre TermnodeLeft = initTree(Term);
+    arbre TermnodeRight = initTree(Term);
+    TermnodeLeft->etiquette = "~";
+    TermnodeRight->etiquette = "~";
+    TermnodeLeft->left_child = leftbranch;
+    TermnodeRight->left_child = rightbranch;
+    
+    currentNode->left_child = TermnodeLeft;
+    currentNode->right_child = TermnodeRight;
+}
+
+void rule6(arbre currentNode){
+    currentNode->etiquette = "&";
+    arbre leftbranch = currentNode->left_child->left_child;
+    arbre rightbranch = currentNode->left_child->right_child;
+    
+    arbre TermnodeLeft = initTree(Term);
+    arbre TermnodeRight = initTree(Term);
+    TermnodeLeft->etiquette = "~";
+    TermnodeRight->etiquette = "~";
+    TermnodeLeft->left_child = leftbranch;
+    TermnodeRight->left_child = rightbranch;
+    
+    currentNode->left_child = TermnodeLeft;
+    currentNode->right_child = TermnodeRight;
+}
+
+void rule7(arbre currentNode){
+    arbre node = currentNode->left_child->left_child;
+    currentNode->etiquette = node->etiquette;
+    currentNode->left_child = node->left_child;
+    currentNode->right_child = node->right_child;
+    currentNode->state = node->state;
+}
