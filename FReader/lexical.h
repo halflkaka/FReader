@@ -28,7 +28,6 @@ int isOperator(char ch){
     }
     return 0;
 }
-
 int isVariableStart(char ch){
     return ch >= 'a' && ch <= 'z';
 }
@@ -87,7 +86,34 @@ struct noeud{
     enum State state;
     arbre left_child;
     arbre right_child;
+    int flag1;
+    int flag2;
+    int flag5;
+    int flag6;
+    int flag7;
 };
+typedef struct pile{
+    void (*push)(arbre);
+    int (*vide)(void);
+    arbre (*pop)(void);
+}pile;
+arbre Root[100];
+int hauteur = 0;
+arbre pop_aux(void){
+    if(hauteur == 0){
+        exit(1);
+    }else{
+        arbre result = Root[--hauteur];
+        Root[hauteur] = NULL;
+        return result;
+    }
+}
+void push_aux(arbre root){
+    Root[hauteur++] = root;
+}
+int vide_aux(){
+    return hauteur == 0;
+}
 
 //Initialization
 arbre initTree(enum State name){
@@ -96,16 +122,27 @@ arbre initTree(enum State name){
     node->left_child = NULL;
     node->right_child = NULL;
     node->state = name;
+    node->flag1 = 0;
+    node->flag2 = 0;
+    node->flag5 = 0;
+    node->flag6 = 0;
+    node->flag7 = 0;
     return node;
 }
 
-void rule1(arbre currentnode);
-void rule2(arbre currentnode);
-void rule5(arbre currentnode);
-void rule6(arbre currentnode);
-void rule7(arbre currentnode);
+
+int rule1(arbre currentnode);
+int rule2(arbre currentnode);
+int rule5(arbre currentnode);
+int rule6(arbre currentnode);
+int rule7(arbre currentnode);
+pile Pile;
+int transform(arbre root, arbre currentnode, arbre newRoot, arbre newNode);
+void TransformStart(arbre root);
+
 int term(int d, int f, arbre currentNode);
 arbre node;
+
 
 void print_formula(llexeme result){
     for(int i = 0;i < result.N;i ++){
@@ -132,26 +169,26 @@ void print_formula(llexeme result){
     }
 }
 //中序遍历打印
-void print_tree(arbre root){
+void print_tree(arbre root, int flag){
     if(root == NULL){return;}
     
     if(root->etiquette[0] == '~'){
-        printf("(");
+        if(flag != 1){printf("(");}
         printf("%s",root->etiquette);
-        print_tree(root->left_child);
-        print_tree(root->right_child);
-        printf(")");
+        print_tree(root->left_child, 0);
+        print_tree(root->right_child, 0);
+        if(flag != 1){printf(")");}
     }
     else{
-        if(root->left_child != NULL){
+        if(root->left_child != NULL && flag != 1){
             printf("(");
         }
-        print_tree(root->left_child);
+        print_tree(root->left_child, 0);
         if(root->etiquette != NULL){
             printf("%s",root->etiquette);
         }
-        print_tree(root->right_child);
-        if(root->right_child != NULL){
+        print_tree(root->right_child, 0);
+        if(root->right_child != NULL && flag != 1){
             printf(")");
         }
     }
@@ -279,10 +316,17 @@ int FScaner() {
     }
     
     arbre root = node->left_child;
-    print_tree(root);
+    print_tree(root,1);
     printf("\n");
     
     regfree(&myregex);
+    
+    Pile.pop = pop_aux;
+    Pile.push = push_aux;
+    Pile.vide = vide_aux;
+    
+    TransformStart(root);
+    
     
     return 0;
 }
@@ -359,68 +403,185 @@ int term(int d, int f, arbre currentNode){
 
 
 //Apply rules
-void rule1(arbre currentNode){
-    currentNode->etiquette = "|";
-    arbre leftbranch = currentNode->left_child;
-    arbre Termnode = initTree(Term);
-    Termnode->etiquette = "~";
-    Termnode->left_child = leftbranch;
-    currentNode->left_child = Termnode;
+int rule1(arbre currentNode){
+    if(currentNode->etiquette[0] == '=' && currentNode->flag1 != 1){
+        currentNode->etiquette = "|";
+        arbre leftbranch = currentNode->left_child;
+        arbre Termnode = initTree(Term);
+        Termnode->etiquette = "~";
+        Termnode->left_child = leftbranch;
+        currentNode->left_child = Termnode;
+        return 1;
+    }
+    return 0;
 }
 
-void rule2(arbre currentNode){
-    currentNode->etiquette = "&";
-    arbre leftbranch = currentNode->left_child;
-    arbre rightbranch = currentNode->right_child;
-    arbre r_leftbranch = rightbranch->left_child;
-    arbre Facnode = initTree(Facteur);
-    
-    Facnode->etiquette = "|";
-    Facnode->left_child = leftbranch;
-    Facnode->right_child = r_leftbranch;
-    
-    currentNode->left_child = Facnode;
-    
-    rightbranch->etiquette = "|";
-    rightbranch->left_child = leftbranch;
+int rule2(arbre currentNode){
+    if(currentNode->etiquette[0] == '|' && currentNode->right_child->etiquette[0] == '&' && currentNode->flag2 != 1){
+        currentNode->etiquette = "&";
+        arbre leftbranch = currentNode->left_child;
+        arbre rightbranch = currentNode->right_child;
+        arbre r_leftbranch = rightbranch->left_child;
+        arbre Facnode = initTree(Facteur);
+        
+        Facnode->etiquette = "|";
+        Facnode->left_child = leftbranch;
+        Facnode->right_child = r_leftbranch;
+        
+        currentNode->left_child = Facnode;
+        
+        rightbranch->etiquette = "|";
+        rightbranch->left_child = leftbranch;
+        return 1;
+    }
+    return 0;
 }
 
-void rule5(arbre currentNode){
-    currentNode->etiquette = "|";
-    arbre leftbranch = currentNode->left_child->left_child;
-    arbre rightbranch = currentNode->left_child->right_child;
-    
-    arbre TermnodeLeft = initTree(Term);
-    arbre TermnodeRight = initTree(Term);
-    TermnodeLeft->etiquette = "~";
-    TermnodeRight->etiquette = "~";
-    TermnodeLeft->left_child = leftbranch;
-    TermnodeRight->left_child = rightbranch;
-    
-    currentNode->left_child = TermnodeLeft;
-    currentNode->right_child = TermnodeRight;
+int rule5(arbre currentNode){
+    if(currentNode->etiquette[0] == '~' && currentNode->left_child->etiquette[0] == '&' && currentNode->flag5 != 1){
+        currentNode->etiquette = "|";
+        arbre leftbranch = currentNode->left_child->left_child;
+        arbre rightbranch = currentNode->left_child->right_child;
+        
+        arbre TermnodeLeft = initTree(Term);
+        arbre TermnodeRight = initTree(Term);
+        TermnodeLeft->etiquette = "~";
+        TermnodeRight->etiquette = "~";
+        TermnodeLeft->left_child = leftbranch;
+        TermnodeRight->left_child = rightbranch;
+        
+        currentNode->left_child = TermnodeLeft;
+        currentNode->right_child = TermnodeRight;
+        return 1;
+    }
+    return 0;
 }
 
-void rule6(arbre currentNode){
-    currentNode->etiquette = "&";
-    arbre leftbranch = currentNode->left_child->left_child;
-    arbre rightbranch = currentNode->left_child->right_child;
-    
-    arbre TermnodeLeft = initTree(Term);
-    arbre TermnodeRight = initTree(Term);
-    TermnodeLeft->etiquette = "~";
-    TermnodeRight->etiquette = "~";
-    TermnodeLeft->left_child = leftbranch;
-    TermnodeRight->left_child = rightbranch;
-    
-    currentNode->left_child = TermnodeLeft;
-    currentNode->right_child = TermnodeRight;
+int rule6(arbre currentNode){
+    if(currentNode->etiquette[0] == '~' && currentNode->left_child->etiquette[0] == '|' && currentNode->flag6 != 1){
+        currentNode->etiquette = "&";
+        arbre leftbranch = currentNode->left_child->left_child;
+        arbre rightbranch = currentNode->left_child->right_child;
+        
+        arbre TermnodeLeft = initTree(Term);
+        arbre TermnodeRight = initTree(Term);
+        TermnodeLeft->etiquette = "~";
+        TermnodeRight->etiquette = "~";
+        TermnodeLeft->left_child = leftbranch;
+        TermnodeRight->left_child = rightbranch;
+        
+        currentNode->left_child = TermnodeLeft;
+        currentNode->right_child = TermnodeRight;
+        return 1;
+    }
+    return 0;
 }
 
-void rule7(arbre currentNode){
-    arbre node = currentNode->left_child->left_child;
-    currentNode->etiquette = node->etiquette;
-    currentNode->left_child = node->left_child;
-    currentNode->right_child = node->right_child;
-    currentNode->state = node->state;
+int rule7(arbre currentNode){
+    if(currentNode->etiquette[0] == '~' && currentNode->left_child->etiquette[0] == '~' && currentNode->flag7 != 1){
+        arbre node = currentNode->left_child->left_child;
+        currentNode->etiquette = node->etiquette;
+        currentNode->left_child = node->left_child;
+        currentNode->right_child = node->right_child;
+        currentNode->state = node->state;
+        return 1;
+    }
+    return 0;
+}
+
+//Copy a new Tree
+arbre newTree(arbre root){
+    if(root == NULL){return NULL;}
+    arbre newRoot = initTree(Term);
+    newRoot->etiquette = root->etiquette;
+    newRoot->flag1 = root->flag1;
+    newRoot->flag2 = root->flag2;
+    newRoot->flag5 = root->flag5;
+    newRoot->flag6 = root->flag6;
+    newRoot->flag7 = root->flag7;
+    newRoot->left_child = newTree(root->left_child);
+    newRoot->right_child = newTree(root->right_child);
+    return newRoot;
+}
+
+//Transform
+int transform(arbre root, arbre currentnode, arbre newRoot, arbre newNode){
+    if(currentnode == NULL && newNode == NULL){return 0;}
+    if(rule1(currentnode)){
+        //Mark the node so that the same rule will not be applied twice
+        currentnode->flag1 = 1;
+        newNode->flag1 = 1;
+        
+        Pile.push(newRoot);//Store the primary tree
+        
+        printf("regle 1: ");
+        print_tree(root,1);
+        printf("\n");
+        
+        Pile.push(root);//Store the new Tree
+        return 1;
+    }else if (rule2(currentnode)){
+        currentnode->flag2 = 1;
+        newNode->flag2 = 1;
+        
+        Pile.push(newRoot);
+        
+        printf("regle 2: ");
+        print_tree(root,1);
+        printf("\n");
+        
+        Pile.push(root);
+        return 1;
+    }else if (rule5(currentnode)){
+        currentnode->flag5 = 1;
+        newNode->flag5 = 1;
+        
+        Pile.push(newRoot);
+        
+        printf("regle 5: ");
+        print_tree(root,1);
+        printf("\n");
+        
+        Pile.push(root);
+        return 1;
+    }else if (rule6(currentnode)){
+        currentnode->flag6 = 1;
+        newNode->flag6 = 1;
+        
+        Pile.push(newRoot);
+        
+        printf("regle 6: ");
+        print_tree(root,1);
+        printf("\n");
+        
+        Pile.push(root);
+        return 1;
+    }else if (rule7(currentnode)){
+        currentnode->flag7 = 1;
+        newNode->flag7 = 1;
+        
+        Pile.push(newRoot);
+        
+        printf("regle 7: ");
+        print_tree(root,1);
+        printf("\n");
+        
+        Pile.push(root);
+        return 1;
+    }else if(transform(root, currentnode->left_child, newRoot, newNode->left_child)){//DFS to apply rules
+        return 1;
+    }else if(transform(root, currentnode->right_child, newRoot, newNode->right_child)){//DFS to apply rules
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+void TransformStart(arbre root){
+    Pile.push(root);
+    while (!Pile.vide()) {//When there are trees
+        arbre currentRoot = Pile.pop();
+        arbre newRoot = newTree(currentRoot);//Copy the tree so that the original information will not be changed
+        transform(currentRoot, currentRoot, newRoot, newRoot);
+    }
 }
