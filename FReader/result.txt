@@ -1,0 +1,7 @@
+a=>((~b)&c)
+regle 1: (~a)|((~b)&c)
+regle 2: ((~a)|(~b))&((~a)|c)
+regle 3: ((~a)|(~b))&(c|(~a))
+regle 4: (c|(~a))&((~a)|(~b))
+regle 4: (~a)|(c&(~b))
+regle 4: a=>(c&(~b))
