@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CFAB76871FD2F56600352A5D /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = CFAB76861FD2F56600352A5D /* main.c */; };
+		CFAB76871FD2F56600352A5D /* project.c in Sources */ = {isa = PBXBuildFile; fileRef = CFAB76861FD2F56600352A5D /* project.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -23,10 +23,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CF78D8C91FFF9ABC00DB27F7 /* analex.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = analex.c; sourceTree = "<group>"; };
+		CF78D8CA1FFF9B1500DB27F7 /* anasynt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = anasynt.c; sourceTree = "<group>"; };
+		CF78D8CB1FFF9BAB00DB27F7 /* moteur.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = moteur.c; sourceTree = "<group>"; };
+		CF78D8CC1FFF9E4600DB27F7 /* source.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = source.h; sourceTree = "<group>"; };
 		CFAB76831FD2F56600352A5D /* FReader */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = FReader; sourceTree = BUILT_PRODUCTS_DIR; };
-		CFAB76861FD2F56600352A5D /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
-		CFAB768D1FD2F5A000352A5D /* lexical.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lexical.h; sourceTree = "<group>"; };
-		CFB9CB891FD7E67200A5AC34 /* syntaxique.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = syntaxique.h; sourceTree = "<group>"; };
+		CFAB76861FD2F56600352A5D /* project.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = project.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,9 +61,11 @@
 		CFAB76851FD2F56600352A5D /* FReader */ = {
 			isa = PBXGroup;
 			children = (
-				CFAB76861FD2F56600352A5D /* main.c */,
-				CFAB768D1FD2F5A000352A5D /* lexical.h */,
-				CFB9CB891FD7E67200A5AC34 /* syntaxique.h */,
+				CFAB76861FD2F56600352A5D /* project.c */,
+				CF78D8C91FFF9ABC00DB27F7 /* analex.c */,
+				CF78D8CA1FFF9B1500DB27F7 /* anasynt.c */,
+				CF78D8CB1FFF9BAB00DB27F7 /* moteur.c */,
+				CF78D8CC1FFF9E4600DB27F7 /* source.h */,
 			);
 			path = FReader;
 			sourceTree = "<group>";
@@ -123,7 +127,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CFAB76871FD2F56600352A5D /* main.c in Sources */,
+				CFAB76871FD2F56600352A5D /* project.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

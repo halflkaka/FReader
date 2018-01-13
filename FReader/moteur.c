@@ -2,34 +2,13 @@
 //  moteur.c
 //  FReader
 //
-//  Created by 侍粲杰 on 2018/1/5.
+//  Created by 侍粲杰 on 2017/12/5.
 //  Copyright © 2018年 侍粲杰. All rights reserved.
 //
 
 #include <stdio.h>
 
-//Ordre
-int depth(arbre root){
-    int LeftDepth = 0, RightDepth = 0;
-    arbre newRoot1 = newTree(root);
-    while(newRoot1 != NULL){
-        LeftDepth ++;
-        newRoot1 = newRoot1->left_child;
-    }
-    arbre newRoot2 = newTree(root);
-    while (newRoot2 != NULL) {
-        RightDepth++;
-        newRoot2 = newRoot2->right_child;
-    }
-    if(LeftDepth >= RightDepth){
-        return LeftDepth;
-    }else{
-        return RightDepth;
-    }
-}
-
-
-//Apply rules
+//Appliquer les regles
 int rule1(arbre currentNode){
     if(currentNode->etiquette[0] == '=' && currentNode->flag1 != 1){
         currentNode->etiquette = "|";
@@ -64,15 +43,9 @@ int rule2(arbre currentNode){
     return 0;
 }
 
+//rule3 et rule4 sont pour modifier l'ordre de la formule
 int rule3(arbre currentNode){
-    if((currentNode->etiquette[0] == '|') &&
-       (depth(currentNode->left_child) > depth(currentNode->right_child)) && currentNode->flag3 != 1){
-        arbre tempNode = currentNode->left_child;
-        currentNode->left_child = currentNode->right_child;
-        currentNode->right_child = tempNode;
-        return 1;
-    }else if((currentNode->etiquette[0] == '|') &&
-             (depth(currentNode->left_child) == depth(currentNode->right_child)) && currentNode->flag3 != 1){
+    if((currentNode->etiquette[0] == '|') && currentNode->flag3 != 1){
         arbre CopyLeft = newTree(currentNode->left_child);
         arbre CopyRight = newTree(currentNode->right_child);
         
@@ -93,14 +66,7 @@ int rule3(arbre currentNode){
 }
 
 int rule4(arbre currentNode){
-    if((currentNode->etiquette[0] == '&') &&
-       (depth(currentNode->left_child) > depth(currentNode->right_child)) && currentNode->flag4 != 1){
-        arbre tempNode = currentNode->left_child;
-        currentNode->left_child = currentNode->right_child;
-        currentNode->right_child = tempNode;
-        return 1;
-    }else if((currentNode->etiquette[0] == '&') &&
-             (depth(currentNode->left_child) == depth(currentNode->right_child)) && currentNode->flag4 != 1){
+    if((currentNode->etiquette[0] == '&') && currentNode->flag4 != 1){
         arbre CopyLeft = newTree(currentNode->left_child);
         arbre CopyRight = newTree(currentNode->right_child);
         
@@ -175,153 +141,144 @@ int rule7(arbre currentNode){
     return 0;
 }
 
-//Transform
+//Transformation. Rentrer 1 si une regle peut etre applique. Sinon rentrer 0.
 int transform(arbre root, arbre currentnode, arbre newRoot, arbre newNode, int* flag, FILE *Fp){
     if(currentnode == NULL && newNode == NULL){return 0;}
     if(flag[1] == 1 && rule1(currentnode)){
-        //Mark the node so that the same rule will not be applied twice
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag1 = 1;
         newNode->flag1 = 1;
         
-        Pile.push(newRoot);//Store the primary tree
+        Pile.push(newRoot);//Enregistrer le premier arbre
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 1: ");
         fputs("regle 1: ", Fp);
         
-        print_tree(root,1, Fp);
+        print_tree(root,1, Fp);//Print le resultat
         
-        printf("\n");
         fputs("\n", Fp);
         
         Pile.push(root);//Store the new Tree
         return 1;
     }else if(flag[2] == 1 && rule2(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag2 = 1;
         newNode->flag2 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 2: ");
         fputs("regle 2: ", Fp);
         
-        print_tree(root,1, Fp);
+        print_tree(root,1, Fp);//Print le resultat
         
-        printf("\n");
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
     }else if (flag[3] == 1 && rule3(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag3 = 1;
         newNode->flag3 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 3: ");
         fputs("regle 3: ", Fp);
         
-        print_tree(root, 1, Fp);
+        print_tree(root, 1, Fp);//Print le resultat
         
-        printf("\n");
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
     }else if (flag[4] == 1 && rule4(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag4 = 1;
         newNode->flag4 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 4: ");
         fputs("regle 4: ", Fp);
         
-        print_tree(root, 1, Fp);
+        print_tree(root, 1, Fp);//Print le resultat
         
-        printf("\n");
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
     }else if (flag[5] == 1 && rule5(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag5 = 1;
         newNode->flag5 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 5: ");
         fputs("regle 5: ", Fp);
         
-        print_tree(root,1, Fp);
-        printf("\n");
+        print_tree(root,1, Fp);//Print le resultat
+
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
     }else if (flag[6] == 1 && rule6(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag6 = 1;
         newNode->flag6 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 6: ");
         fputs("regle 6: ", Fp);
         
-        print_tree(root,1, Fp);
-        printf("\n");
+        print_tree(root,1, Fp);//Print le resultat
+
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
     }else if (flag[7] == 1 && rule7(currentnode)){
+        //Remarquer la node telle que la meme regle ne va pas etre applique deux fois
         currentnode->flag7 = 1;
         newNode->flag7 = 1;
         
         Pile.push(newRoot);
         
-        //        FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "a");
-        printf("regle 7: ");
         fputs("regle 7: ", Fp);
         
-        print_tree(root,1, Fp);
-        printf("\n");
+        print_tree(root,1, Fp);//Print le resultat
+
         fputs("\n", Fp);
         
         Pile.push(root);
         return 1;
-    }else if(transform(root, currentnode->left_child, newRoot, newNode->left_child, flag, Fp)){//DFS to apply rules
+    }else if(transform(root, currentnode->left_child, newRoot, newNode->left_child, flag, Fp)){//DFS dans la branche gauche pour appliquer les regles
         return 1;
-    }else if(transform(root, currentnode->right_child, newRoot, newNode->right_child, flag, Fp)){//DFS to apply rules
+    }else if(transform(root, currentnode->right_child, newRoot, newNode->right_child, flag, Fp)){//DFS dans la branche droite pour appliquer les regles
         return 1;
     }else{
         return 0;
     }
 }
 
+//Commencer la transformation a chaque arbre dans la liste
 void TransformStart(arbre root, int* flag, FILE* Fp){
     Pile.push(root);
-    while (!Pile.vide()) {//When there are trees
+    while (!Pile.vide()) {//Quand il y a des arbres
         arbre currentRoot = Pile.pop();
-        arbre newRoot = newTree(currentRoot);//Copy the tree so that the original information will not be changed
+        arbre newRoot = newTree(currentRoot);//Copier l'arbre tel que l'information de l'arbre original ne va pas changer a cause de l'operation du pointeur
         transform(currentRoot, currentRoot, newRoot, newRoot,flag, Fp);
     }
 }
 
-void moteur(int* flag){
-    FILE *Fp = fopen("/Users/shicanjie/SJTU/TPLA/FReader/FReader/result.txt", "w");
+//La fonction pour appliquer le moteur
+void moteur(int* flag, int type){
+    FILE *Fp;
+    if(type == 0){Fp = fopen("result.txt", "w");}
+    else{Fp = fopen("result.txt", "a");fputs("\n", Fp);}
     
-    arbre root = node->left_child;
+    arbre root = node->left_child;//Obtenir le root de l'arbre de la formule
     print_tree(root,1,Fp);
-    printf("\n");
     fputs("\n", Fp);
     
-    
+    //Definition du Pile
     Pile.pop = pop_aux;
     Pile.push = push_aux;
     Pile.vide = vide_aux;
